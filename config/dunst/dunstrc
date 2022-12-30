@@ -83,7 +83,7 @@
 
     ### Text ###
 
-    font = DroidSansM Nerd Font Propo 12
+    font = DroidSansM Nerd Font Propo 28
 
     # The spacing between lines.  If the height is smaller than the
     # font height, it will get raised to the font height.

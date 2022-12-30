@@ -108,6 +108,11 @@
 
 (add-hook! 'org-mode-hook 'kz/org-mode)
 
+;; lsp config
+(setq lsp-ui-doc-show-with-cursor t)
+(setq lsp-ui-doc-show-with-mouse t)
+(setq lsp-ui-doc-delay 0.5)
+
 (after! dictionary
   (setq dictionary-tooltip-dictionary "wikt-en-all"))
 
