@@ -24,16 +24,22 @@
 (menu-bar-mode -1)
 (set-fringe-mode 10)
 (global-hl-line-mode 1)
-(global-visual-line-mode 1)
+(global-visual-line-mode -1)
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (setq-default indent-tabs-mode nil)
 (setf dired-kill-when-opening-new-dired-buffer t)
 (set-frame-parameter nil 'alpha-background 90)
 (setq scroll-conservatively 1)
-(fset 'yes-or-no-p 'y-or-n-p)
+(setq use-short-answers t)
+(setq confirm-nonexistent-file-or-buffer nil)
+(setq delete-by-moving-to-trash t)
 (advice-add 'risky-local-variable-p :override #'ignore)
+(winner-mode)
 
-(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(add-hook 'prog-mode-hook
+          (lambda ()
+            (display-line-numbers-mode 1)
+            (toggle-truncate-lines 1)))
 
 (load-file "~/.emacs.d/elisp/utils.el")
 
@@ -59,6 +65,19 @@
 (setq ediff-split-window-function 'split-window-horizontally)
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; window layout settings ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq switch-to-buffer-obey-display-actions t)
+(setq switch-to-buffer-in-dedicated-window 'pop)
+(setq display-buffer-alist nil)
+(setq help-window-select t)
+(add-to-list 'display-buffer-alist
+             '("\\*help\\*\\|\\*pytest\\*\\|\\*Gofmt Errors\\*"
+               (display-buffer-reuse-window display-buffer-at-bottom)
+               (window-height . 0.25 )))
+
+
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("melpa-stable" . "https://stable.melpa.org/packages/")
@@ -73,6 +92,8 @@
 (eval-when-compile
   (require 'use-package))
 (setq use-package-always-ensure t)
+
+(use-package dash)
 
 (use-package swiper)
 
@@ -98,6 +119,8 @@
 
 (use-package ivy
   :diminish
+  :config
+  (setq ivy-use-selectable-prompt t)
   :bind (("C-s" . swiper)
          :map ivy-minibuffer-map
          ("TAB" . ivy-done)
@@ -136,7 +159,7 @@
   (setq doom-themes-enable-bold t)
   (setq doom-themes-enable-italic t)
   (column-number-mode 1)
-  (load-theme 'doom-xcode t))
+  (load-theme 'doom-xcode))
 
 (use-package beacon
   :config
@@ -184,12 +207,12 @@
   (setq evil-want-C-d-scroll t)
   (setq evil-want-C-i-jump t)
   (setq evil-want-C-o-jump t)
-  (setq evil-want-respect-visual-line-mode t)
+  (setq evil-want-respect-visual-line-mode nil)
   (setq evil-undo-system 'undo-tree)
   :config
   (evil-mode 1)
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+  (evil-global-set-key 'motion "j" 'evil-next-line)
+  (evil-global-set-key 'motion "k" 'evil-previous-line)
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal))
 
@@ -280,6 +303,7 @@
     "ff" 'counsel-find-file
     "fp" 'kz/open-emacs-config
     "fs" 'save-buffer
+    "fF" 'kz/find-file-in-new-window-layout
     "gB" 'magit-blame-addition
     "gdf" 'kz/magit-diff-file
     "gff" 'magit-find-file
@@ -299,8 +323,12 @@
     "wj" 'evil-window-down
     "wk" 'evil-window-up
     "wl" 'evil-window-right
-    "ws" 'evil-window-split
-    "wv" 'evil-window-vsplit
+    "ws" 'split-window-below
+    "wv" 'split-window-right
+    "wS" 'kz/split-window-below-all
+    "wV" 'kz/split-window-right-all
+    "wp" 'winner-undo
+    "wn" 'winner-redo
     "ww" 'ace-window)
 
   (general-create-definer kz/persp-define-key
@@ -375,7 +403,7 @@
   :after company
   :hook (company-mode . company-box-mode)
   :config
-  (setq company-backends '((company-capf company-files))))
+  (setq company-backends '((company-capf company-files company-yasnippet))))
 
 (use-package lsp-mode
   :defer t
@@ -386,16 +414,24 @@
   :defer t
   :hook (lsp-mode . lsp-ui-mode))
 
-(use-package lsp-pyright
-  :defer t
-  :hook (python-mode . (lambda ()
-			 (require 'lsp-pyright))))
+(use-package lua-mode
+  :config
+  (setq lua-indent-level 4))
 
-(use-package lua-mode)
+(use-package go-mode
+  :config
+  (fset 'godef-jump 'evil-goto-definition))
 
-(use-package go-mode)
+(use-package clojure-mode)
+(use-package inf-clojure)
+
+(use-package vue-mode
+  :config
+  (setq js-indent-level 2))
 
 (use-package dockerfile-mode)
+
+(use-package restclient)
 
 (use-package elpy
   :defer t)
@@ -417,12 +453,16 @@
 
 (defun kz/go-settings ()
   (yas-minor-mode)
-  (setq gofmt-command "goimports")
+  (setq gofmt-command "gofmt")
   (add-hook 'before-save-hook 'gofmt-before-save)
   (if (not (string-match "go" compile-command))
       (set (make-local-variable 'compile-command)
            "go build -v && go test -v && go vet")))
 (add-hook 'go-mode-hook 'kz/go-settings)
+
+(use-package doom-snippets
+  :load-path "~/.emacs.d/snippets"
+  :after yasnippet)
 
 (use-package flycheck
   :defer t
@@ -443,12 +483,19 @@
   (require 'ob-python)
   :hook (org-mode lambda ()
 				  (display-line-numbers-mode 0)
-				  (hl-line-mode 0))
+                  (org-indent-mode 1)
+				  (hl-line-mode 0)
+                  (flyspell-mode))
+
+  :bind ("C-c l" . 'org-store-link)
+  :bind ("C-c h" . 'org-insert-heading)
+  :bind ("C-c s" . 'org-insert-subheading)
   :config
   (setq org-directory "~/Org/")
   (setq org-ellipsis " ▼")
   (setq org-startup-folded 'showall)
   (setq org-hide-block-startup t)
+  (setq org-hide-emphasis-markers t)
   (setq org-agenda-start-with-log-mode t)
   (setq org-edit-src-content-indentation 0)
   (setq org-log-done 'time)
@@ -456,8 +503,8 @@
   (setq org-todo-keywords
         '((sequence "TODO(t)" "NEXT(n)" "IN_PROGRESS(p)" "REPEAT(r)" "|" "DONE(d)" "CANCELED(c)")))
   (setq org-tag-alist '(("PERSONAL" . ?p) ("CODING" . ?c) ("PROJECTS" . ?h) ("EDUCATIONAL" . ?u)
-                        ("ENTERTAINMENT" . ?e) ("BOOKS" . ?b) ("MOVIES" . ?m) ("COURSES" . ?r) ("SKILLS" . ?s))))
-
+                        ("ENTERTAINMENT" . ?e) ("BOOKS" . ?b) ("MOVIES" . ?m) ("COURSES" . ?r) ("SKILLS" . ?s)))
+  (setq org-html-validation-link nil))
 
 (use-package org-bullets
   :defer t
@@ -468,16 +515,13 @@
 
 (use-package visual-fill-column
   :hook (org-mode lambda ()
-                  (setq visual-fill-column-width 100
+                  (setq visual-fill-column-width 150
                         visual-fill-column-center-text t)
                   (visual-fill-column-mode 1)))
   
-(use-package tree-sitter-langs
-  :defer t)
-
 (use-package tree-sitter
   :defer t
-  :hook (python-mode lambda ()
+  :hook (prog-mode lambda ()
                      (require 'tree-sitter-langs)
                      (tree-sitter-mode 1)
                      (tree-sitter-hl-mode 1)))
@@ -486,6 +530,9 @@
   :defer t
   :init
   (pdf-tools-install))
+
+(use-package simple-httpd)
+(use-package htmlize)
 
 (use-package smartparens
   :init
@@ -521,7 +568,8 @@
     (if (eq evil-state 'visual)
         (python-black-region evil-visual-beginning evil-visual-end)
       (python-black-buffer)))
-  (when (eq major-mode 'lua-mode) (lua-format-buffer)))
+  (when (eq major-mode 'lua-mode) (lua-format-buffer))
+  (when (eq major-mode 'go-mode) (gofmt)))
 
 (defun kz/magit-diff-file ()
   (interactive)
@@ -531,3 +579,9 @@
 
 (load-file "~/.emacs.d/elisp/overrides.el")
 (load-file "~/.emacs.d/elisp/docker.el")
+
+(defun kz/find-file-in-new-window-layout ()
+  (interactive)
+  (progn
+    (projectile-find-file)
+    (delete-other-windows)))

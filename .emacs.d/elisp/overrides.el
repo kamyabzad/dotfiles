@@ -46,3 +46,27 @@ first."
 (defun persp-names ()
   (if persp-sort-reverse-p (reverse (persp-names-default-sort))
     (persp-names-default-sort)))
+
+(defun kz/filter-persp-buffers (buf)
+  (string-match-p
+   "^[^*]\\|\\*scratch\\*"
+   (buffer-name buf)))
+
+
+(defun persp--switch-buffer-ivy-counsel-helper (arg fallback)
+  (unless (featurep 'ivy)
+    (user-error "Ivy not loaded"))
+  (declare-function ivy-read "ivy.el")
+  (if (and persp-mode (null arg))
+      (let ((real-ivy-read (symbol-function 'ivy-read))
+            (current-bufs
+             (seq-filter #'kz/filter-persp-buffers (persp-current-buffers* t))))
+        (cl-letf (((symbol-function 'ivy-read)
+                   (lambda (&rest args)
+                     (apply real-ivy-read
+                            (append args
+                                    (list :predicate
+                                          (lambda (b)
+                                            (memq (cdr b) current-bufs))))))))
+          (funcall fallback)))
+    (funcall fallback)))
