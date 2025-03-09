@@ -293,6 +293,7 @@
     "dS" 'kz/docker-project-stop-container
     "dr" 'kz/docker-project-restart-container
     "ds" 'kz/docker-project-start-container
+    "df" 'kz/docker-find-file
     "daS" 'kz/docker-stop-container
     "dar" 'kz/docker-restart-container
     "das" 'kz/docker-start-container
@@ -423,6 +424,9 @@
   (fset 'godef-jump 'evil-goto-definition))
 
 (use-package clojure-mode)
+(use-package cider
+  :ensure t
+  :pin melpa-stable)
 (use-package inf-clojure)
 
 (use-package vue-mode

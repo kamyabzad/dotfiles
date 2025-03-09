@@ -4,8 +4,10 @@
 
 (defun kz/docker-container-entries(&rest filters)
   (if (and filters (car filters))
-      (aio-wait-for (docker-container-entries (mapconcat (lambda (f) (format "-f %s" f)) filters " "))))
-                                (aio-wait-for (docker-container-entries "--all")))
+      (aio-wait-for
+       (docker-container-entries
+        (mapconcat (lambda (f) (format "-f %s" f)) filters " "))))
+  (aio-wait-for (docker-container-entries "--all")))
 
 (defun kz/docker-project-container-entries(&rest filters)
   (mapcar
@@ -49,3 +51,9 @@
   (interactive)
   (let ((container (completing-read "Start container: " (kz/docker-project-container-entries "status=created" "status=exited"))))
     (kz/docker-project-run-command "start" container)))
+
+
+(defun kz/docker-find-file ()
+  (interactive)
+  (let ((container (completing-read "Select container: " (kz/docker-container-entries "status=running"))))
+    (counsel-find-file (concat "/docker:root@" container ":/"))))
