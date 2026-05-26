@@ -1,7 +1,7 @@
 export SCRIPT_PATH=$(pwd)
 
 rm ~/.zshrc
-ln -s $SCRIPT_PATH/zshrc ~/.zshrc
+ln -s $SCRIPT_PATH/.zshrc ~/.zshrc
 
 rm ~/.Xmodmap
 ln -s $SCRIPT_PATH/Xmodmap ~/.Xmodmap

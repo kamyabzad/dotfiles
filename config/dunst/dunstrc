@@ -314,3 +314,7 @@
     timeout = 0
     # Icon for notifications with critical urgency, uncomment to enable
     #icon = /path/to/icon
+
+[skip-rule]
+appname = vpnui
+skip_display = true

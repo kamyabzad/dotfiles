@@ -41,7 +41,9 @@
             (display-line-numbers-mode 1)
             (toggle-truncate-lines 1)))
 
-(load-file "~/.emacs.d/elisp/utils.el")
+(dolist (file (directory-files "~/.emacs.d/elisp/" t "\\.el$"))
+  (load-file file))
+
 
 ;; Get rid of annoying backup/autosave/lock files
 (setq create-lockfiles nil)
@@ -52,6 +54,7 @@
       `((".*" ,temporary-file-directory t)))
 (setq custom-file "~/.emacs-custom.el")
 (load custom-file)
+(add-to-list 'exec-path "~/.local/bin")
 
 (set-face-attribute 'default nil :font "JetBrains Mono" :height 130)
 (modify-syntax-entry ?_ "w")
@@ -101,7 +104,8 @@
   :demand t
   :config (projectile-mode)
   :init
-  (setq projectile-switch-project-action #'kz/projectile-switch-project-action))
+  (setq projectile-switch-project-action #'kz/projectile-switch-project-action)
+  (setq projectile-git-submodule-command "true"))
 
 (use-package counsel
   :bind ("M-x" . counsel-M-x)
@@ -304,7 +308,7 @@
     "ff" 'counsel-find-file
     "fp" 'kz/open-emacs-config
     "fs" 'save-buffer
-    "fF" 'kz/find-file-in-new-window-layout
+    "fF" 'kz/sudo-find-file
     "gB" 'magit-blame-addition
     "gdf" 'kz/magit-diff-file
     "gff" 'magit-find-file
@@ -408,8 +412,10 @@
 
 (use-package lsp-mode
   :defer t
-  :hook ((python-mode go-mode lua-mode) . lsp)
-  :commands lsp)
+  :hook ((python-mode go-mode lua-mode rust-mode) . lsp)
+  :commands lsp
+  :config
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]tests\\'"))
 
 (use-package lsp-ui
   :defer t
@@ -421,7 +427,7 @@
 
 (use-package go-mode
   :config
-  (fset 'godef-jump 'evil-goto-definition))
+  (fset 'godef-jump 'lsp-find-definition))
 
 (use-package clojure-mode)
 (use-package cider
@@ -435,7 +441,13 @@
 
 (use-package dockerfile-mode)
 
-(use-package restclient)
+(use-package typescript-mode)
+
+(use-package rust-mode)
+
+(use-package restclient
+  :config
+  (add-to-list 'auto-mode-alist '("\\.rest\\'" . restclient-mode)))
 
 (use-package elpy
   :defer t)
@@ -462,7 +474,13 @@
   (if (not (string-match "go" compile-command))
       (set (make-local-variable 'compile-command)
            "go build -v && go test -v && go vet")))
+
+(defun kz/rust-settings ()
+  (yas-minor-mode)
+  (setq rust-indent-offset 2))
+
 (add-hook 'go-mode-hook 'kz/go-settings)
+(add-hook 'rust-mode-hook 'kz/rust-settings)
 
 (use-package doom-snippets
   :load-path "~/.emacs.d/snippets"
@@ -581,11 +599,17 @@
         (other (magit-find-file-other-window (completing-read "from revision: " (magit-list-refnames)) (buffer-file-name))))
     (ediff-buffers current other)))
 
-(load-file "~/.emacs.d/elisp/overrides.el")
-(load-file "~/.emacs.d/elisp/docker.el")
-
 (defun kz/find-file-in-new-window-layout ()
   (interactive)
   (progn
     (projectile-find-file)
     (delete-other-windows)))
+
+
+(defun kz/sudo-find-file ()
+  (interactive)
+  (find-file (read-file-name "Sudo find file: " "/sudo::")))
+
+(defun kz/uuid4 ()
+  (interactive)
+  (insert (uuid-string)))
