@@ -29,7 +29,7 @@ for_window [class="^.*"] border pixel 0
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec kitty
+bindsym $mod+Return exec kitty tmux -u new-session
 
 # kill focused window
 bindsym $mod+q kill
@@ -199,6 +199,7 @@ bindsym $mod+Ctrl+l exec ~/.config/i3/i3lock.sh
 bindsym $mod+Ctrl+s exec ~/.config/i3/i3lock.sh && systemctl suspend
 bindsym Print exec --no-startup-id maim --select | xclip -selection clipboard -t image/png
 bindsym $mod+Print exec --no-startup-id maim ~/Pictures/$(date +sc%Y%m%d%H%M%S.jpg)
+bindsym $mod+Ctrl+Print exec --no-startup-id screenrec
 bindsym XF86AudioRaiseVolume exec amixer -q sset Master 5%+
 bindsym XF86AudioLowerVolume exec amixer -q sset Master 5%-
 bindsym XF86AudioMute exec "amixer -q sset Master,0 toggle"
@@ -208,11 +209,10 @@ bindsym XF86AudioMute exec "amixer -q sset Master,0 toggle"
 bindsym XF86MonBrightnessUp exec xbacklight -inc 5
 bindsym XF86MonBrightnessDown exec xbacklight -dec 5
 bindsym $mod+t exec xinput list | grep -i touchpad | rg 'id=[0-9]+' -o | rg '[0-9]+' -o | xargs xinput disable
-Bindsym $mod+shift+t exec xinput list | grep -i touchpad | rg 'id=[0-9]+' -o | rg '[0-9]+' -o | xargs xinput enable
+bindsym $mod+shift+t exec xinput list | grep -i touchpad | rg 'id=[0-9]+' -o | rg '[0-9]+' -o | xargs xinput enable
 
 bindsym $mod+shift+c exec python3 /home/kamyab/Projects/Go/clippy-cycle/src/clippy.py push
 bindsym $mod+shift+v exec python3 /home/kamyab/Projects/Go/clippy-cycle/src/clippy.py pop
-
 
 # Start up executions
 exec_always feh --bg-fill $HOME/Pictures/wp.jpg

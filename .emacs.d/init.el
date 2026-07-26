@@ -476,8 +476,7 @@
            "go build -v && go test -v && go vet")))
 
 (defun kz/rust-settings ()
-  (yas-minor-mode)
-  (setq rust-indent-offset 2))
+  (yas-minor-mode))
 
 (add-hook 'go-mode-hook 'kz/go-settings)
 (add-hook 'rust-mode-hook 'kz/rust-settings)
@@ -569,7 +568,7 @@
   :custom
   (persp-mode-prefix-key (kbd "C-c M-p"))
   :config
-  (setq persp-sort 'created))
+  (setq persp-sort 'oldest))
 
 (use-package docker
   :ensure t)

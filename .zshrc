@@ -45,6 +45,10 @@ switch_to_laptop() {
     i3-msg restart
 }
 
+saveclip() {
+    xclip -selection clipboard -o > ~/Pictures/clip_$(date +%s).jpg
+}
+
 port2pid() {
   netstat -tlnp 2>/dev/null | awk -v port=":$1" '$4 ~ port {split($7, a, "/"); print a[1]}'
 }
@@ -52,3 +56,11 @@ port2pid() {
 
 alias d="docker"
 alias dc="docker-compose"
+
+PROXY_URL="${PROXY_URL:-http://127.0.0.1:8080}"
+
+proxy() {
+    HTTP_PROXY="$PROXY_URL" HTTPS_PROXY="$PROXY_URL" ALL_PROXY="$PROXY_URL" \
+    NO_PROXY="localhost,127.0.0.1" \
+    "$@"
+}
