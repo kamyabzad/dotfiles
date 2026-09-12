@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 (defcustom persp-sort-reverse-p t
   "Whether sort should be in reverse"
   :group 'perspective-mode

@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 (defvar kz/trusted-startup-org-files-list '()
   "Trusted org files for running their startup block")
 

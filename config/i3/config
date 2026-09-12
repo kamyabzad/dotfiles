@@ -215,15 +215,14 @@ bindsym $mod+shift+c exec python3 /home/kamyab/Projects/Go/clippy-cycle/src/clip
 bindsym $mod+shift+v exec python3 /home/kamyab/Projects/Go/clippy-cycle/src/clippy.py pop
 
 # Start up executions
-exec_always feh --bg-fill $HOME/Pictures/wp.jpg
+exec_always --no-startup-id feh --bg-fill $HOME/Pictures/wp.jpg
 exec_always $HOME/.config/polybar/launch.sh
 exec_always dunst
-exec_always xmodmap .Xmodmap
+exec_always setxkbmap us,ir -option grp:ctrls_toggle && xmodmap ~/.Xmodmap
 exec_always i3alter
 exec_always sh $HOME/.config/i3/battery.sh
 exec picom --config $HOME/.config/picom.conf
 exec greenclip daemon
-exec setxkbmap us,ir -option grp:ctrls_toggle
 exec kitty tmux -u new-session -t main
 exec emacs
 exec firefox

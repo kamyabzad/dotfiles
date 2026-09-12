@@ -1,6 +1,15 @@
+;;; -*- lexical-binding: t -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; stolen bits from Doom Emacs to make the startup faster ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Silence noisy third-party warnings we can't fix
+(with-eval-after-load 'warnings
+  (add-to-list 'warning-suppress-types '(files missing-lexbind-cookie))
+  (add-to-list 'warning-suppress-log-types '(files missing-lexbind-cookie))
+  (add-to-list 'warning-suppress-types '(native-compiler))
+  (add-to-list 'warning-suppress-log-types '(native-compiler)))
+(setq native-comp-async-report-warnings-errors 'silent)
 
 ;; supressing garabge-collector at startup
 (setq gc-cons-threshold most-positive-fixnum
@@ -127,7 +136,7 @@
   (setq ivy-use-selectable-prompt t)
   :bind (("C-s" . swiper)
          :map ivy-minibuffer-map
-         ("TAB" . ivy-done)
+         ("TAB" . ivy-insert-current)
          ("C-j" . ivy-next-line)
          ("C-k" . ivy-previous-line)
          :map ivy-switch-buffer-map
@@ -341,6 +350,7 @@
     :prefix "SPC TAB")
 
   (kz/persp-define-key
+    "TAB" `persp-switch-last
     "d" 'persp-kill
     "n" 'persp-next
     "p" 'persp-prev
@@ -445,9 +455,7 @@
 
 (use-package rust-mode)
 
-(use-package restclient
-  :config
-  (add-to-list 'auto-mode-alist '("\\.rest\\'" . restclient-mode)))
+(use-package restclient)
 
 (use-package elpy
   :defer t)
@@ -534,11 +542,18 @@
 (use-package latex-preview-pane
   :defer t)
 
+(defun kz/prose-mode ()
+  (setq visual-fill-column-width 80
+        visual-fill-column-center-text t)
+  (visual-fill-column-mode 1)
+  (setq-local word-wrap t)
+  (evil-local-set-key 'motion "j" 'evil-next-visual-line)
+  (evil-local-set-key 'motion "k" 'evil-previous-visual-line))
+
 (use-package visual-fill-column
-  :hook (org-mode lambda ()
-                  (setq visual-fill-column-width 150
-                        visual-fill-column-center-text t)
-                  (visual-fill-column-mode 1)))
+  :hook
+  (org-mode . kz/prose-mode)
+  (markdown-mode . kz/prose-mode))
   
 (use-package tree-sitter
   :defer t
