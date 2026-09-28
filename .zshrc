@@ -46,7 +46,7 @@ switch_to_laptop() {
 }
 
 saveclip() {
-    xclip -selection clipboard -o > ~/Pictures/clip_$(date +%s).jpg
+    xclip -selection clipboard -o > "${1:-$HOME/Pictures/clip_$(date +%s).jpg}"
 }
 
 port2pid() {
@@ -64,3 +64,7 @@ proxy() {
     NO_PROXY="localhost,127.0.0.1" \
     "$@"
 }
+
+alias jmonthstart='python3 -c "import jdatetime; t=jdatetime.date.today(); print(jdatetime.date(t.year, t.month, 1).togregorian())"'
+
+alias hl_bal='hledger bal --budget expenses -p "since $(jmonthstart)"'

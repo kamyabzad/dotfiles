@@ -74,6 +74,14 @@
    (cons (decode-char 'ucs #x0600) (decode-char 'ucs #x06ff)) ; arabic
    "Vazir Code")
 
+(unless (query-fontset "fontset-prose")
+  (create-fontset-from-fontset-spec "-*-*-*-*-*--*-*-*-*-*-*-fontset-prose"))
+(set-fontset-font "fontset-prose" '(#x600 . #x6ff) "IRANSansX")
+
+(defface kz/prose-face '((t))
+  "Face used in `kz/prose-mode' buffers.")
+(set-face-attribute 'kz/prose-face nil :fontset "fontset-prose")
+
 (setq ediff-split-window-function 'split-window-horizontally)
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
 
@@ -89,6 +97,7 @@
                (display-buffer-reuse-window display-buffer-at-bottom)
                (window-height . 0.25 )))
 
+(setq calendar-week-start-day 6)
 
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -351,11 +360,12 @@
 
   (kz/persp-define-key
     "TAB" `persp-switch-last
+    "`" `persp-switch
     "d" 'persp-kill
     "n" 'persp-next
     "p" 'persp-prev
     "R" 'persp-rename
-    "s" 'persp-switch-to-scratch-buffer
+    "S" 'persp-switch-to-scratch-buffer
     "1" (lambda () (interactive) (persp-switch-by-number 1))
     "2" (lambda () (interactive) (persp-switch-by-number 2))
     "3" (lambda () (interactive) (persp-switch-by-number 3))
@@ -519,7 +529,12 @@
   :bind ("C-c l" . 'org-store-link)
   :bind ("C-c h" . 'org-insert-heading)
   :bind ("C-c s" . 'org-insert-subheading)
+  :bind ("C-c a" . 'org-agenda)
+  :bind (:map org-mode-map
+         ("C-c j d" . kz/org-deadline-persian)
+         ("C-c j s" . kz/org-schedule-persian))
   :config
+  (setq org-agenda-format-date #'kz/org-agenda-format-date-persian)
   (setq org-directory "~/Org/")
   (setq org-ellipsis " ▼")
   (setq org-startup-folded 'showall)
@@ -535,18 +550,73 @@
                         ("ENTERTAINMENT" . ?e) ("BOOKS" . ?b) ("MOVIES" . ?m) ("COURSES" . ?r) ("SKILLS" . ?s)))
   (setq org-html-validation-link nil))
 
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory "~/org/roam/")
+  (org-roam-completion-everywhere t)
+  (org-roam-db-autosync-mode 1)
+  (org-roam-capture-templates
+   '(("d" "default" plain
+      "%?"
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)))
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry "%<%I:%M %p>: %?"
+      :if-new (file+head "%(kz/persian-date-string \"-\").org" "#+title: %(kz/persian-date-string \"-\")\n"))))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert)
+         :map org-mode-map
+         ("C-M-i" . completion-at-point)))
+
+(use-package org-roam-dailies
+  :ensure nil
+  :after org-roam
+  :config
+  (define-key global-map (kbd "C-c n d") org-roam-dailies-map)
+  (define-key org-roam-dailies-map (kbd "c") #'kz/org-roam-dailies-goto-persian-date)
+  (define-key org-roam-dailies-map (kbd "v") #'kz/org-roam-dailies-capture-persian-date)
+  (advice-add 'org-roam-dailies-calendar--file-to-date
+              :override #'kz/org-roam-dailies--file-to-gregorian-date))
+
+(use-package org-roam-ui
+    :after org-roam
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+
 (use-package org-bullets
   :defer t
   :hook (org-mode . org-bullets-mode))
 
+(use-package valign
+  :defer t
+  :hook (org-mode . valign-mode))
+
 (use-package latex-preview-pane
   :defer t)
 
+(use-package ispell
+  :config
+  (let ((entry (assoc "en_US,fa_IR" ispell-dictionary-alist)))
+    (unless (and entry (> (length entry) 2))
+      (ispell-set-spellchecker-params)
+      (ispell-hunspell-add-multi-dic "en_US,fa_IR"))))
+
 (defun kz/prose-mode ()
+  (interactive)
+  (visual-line-mode 1)
   (setq visual-fill-column-width 80
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1)
   (setq-local word-wrap t)
+  (buffer-face-set 'kz/prose-face)
+  (setq-local ispell-local-dictionary "en_US,fa_IR")
+  (when (bound-and-true-p flyspell-mode)
+    (flyspell-buffer))
   (evil-local-set-key 'motion "j" 'evil-next-visual-line)
   (evil-local-set-key 'motion "k" 'evil-previous-visual-line))
 
@@ -587,6 +657,8 @@
 
 (use-package docker
   :ensure t)
+
+(use-package hledger-mode)
 
 (require 'reformatter)
 (reformatter-define lua-format
