@@ -72,7 +72,7 @@
 (set-fontset-font
    "fontset-default"
    (cons (decode-char 'ucs #x0600) (decode-char 'ucs #x06ff)) ; arabic
-   "Vazir Code")
+   "IRANSansX")
 
 (unless (query-fontset "fontset-prose")
   (create-fontset-from-fontset-spec "-*-*-*-*-*--*-*-*-*-*-*-fontset-prose"))
@@ -113,6 +113,16 @@
 (eval-when-compile
   (require 'use-package))
 (setq use-package-always-ensure t)
+
+(use-package persian-calendar
+  :ensure nil
+  :load-path "~/Projects/Emacs/persian-calendar.el/"
+  :after calendar
+  :demand t
+  :commands (persian-calendar-mode)
+  :bind (:map calendar-mode-map ("P" . persian-calendar-mode))
+  :custom
+  (persian-calendar-auto-enable 1))
 
 (use-package dash)
 
@@ -352,7 +362,11 @@
     "wV" 'kz/split-window-right-all
     "wp" 'winner-undo
     "wn" 'winner-redo
-    "ww" 'ace-window)
+    "ww" 'ace-window
+    "ni" 'org-roam-node-insert
+    "nf" 'org-roam-node-find
+    "nu" 'org-roam-ui-open
+    "nd" 'org-roam-dailies-map)
 
   (general-create-definer kz/persp-define-key
     :states '(normal)
@@ -522,7 +536,6 @@
   (require 'ob-python)
   :hook (org-mode lambda ()
 				  (display-line-numbers-mode 0)
-                  (org-indent-mode 1)
 				  (hl-line-mode 0)
                   (flyspell-mode))
 
@@ -530,9 +543,6 @@
   :bind ("C-c h" . 'org-insert-heading)
   :bind ("C-c s" . 'org-insert-subheading)
   :bind ("C-c a" . 'org-agenda)
-  :bind (:map org-mode-map
-         ("C-c j d" . kz/org-deadline-persian)
-         ("C-c j s" . kz/org-schedule-persian))
   :config
   (setq org-agenda-format-date #'kz/org-agenda-format-date-persian)
   (setq org-directory "~/Org/")
@@ -575,8 +585,6 @@
   :after org-roam
   :config
   (define-key global-map (kbd "C-c n d") org-roam-dailies-map)
-  (define-key org-roam-dailies-map (kbd "c") #'kz/org-roam-dailies-goto-persian-date)
-  (define-key org-roam-dailies-map (kbd "v") #'kz/org-roam-dailies-capture-persian-date)
   (advice-add 'org-roam-dailies-calendar--file-to-date
               :override #'kz/org-roam-dailies--file-to-gregorian-date))
 

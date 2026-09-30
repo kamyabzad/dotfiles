@@ -30,32 +30,12 @@
               (year (nth 0 parts)) (month (nth 1 parts)) (day (nth 2 parts)))
     (calendar-gregorian-from-absolute (calendar-persian-to-absolute (list month day year)))))
 
-(defun kz/org-roam-dailies-goto-persian-date (&optional keys)
-  "Find the daily-note for a Persian (Jalali) date, creating it if necessary."
-  (interactive)
-  (org-roam-dailies--capture (kz/read-persian-date) t keys))
-
-(defun kz/org-roam-dailies-capture-persian-date (&optional keys)
-  "Create an entry in the daily-note for a Persian (Jalali) date."
-  (interactive)
-  (org-roam-dailies--capture (kz/read-persian-date) nil keys))
-
 (defun kz/org-agenda-format-date-persian (date)
   "Format Gregorian calendar DATE as a Persian (Jalali) date for the agenda header."
   (let* ((dayname (calendar-day-name date))
          (pdate (calendar-persian-from-absolute (calendar-absolute-from-gregorian date)))
          (month (aref calendar-persian-month-name-array (1- (nth 0 pdate)))))
     (format "%-10s %2d %s %4d" dayname (nth 1 pdate) month (nth 2 pdate))))
-
-(defun kz/org-deadline-persian (arg)
-  "Set a DEADLINE using a Persian (Jalali) date."
-  (interactive "P")
-  (org-deadline arg (format-time-string "%Y-%m-%d" (kz/read-persian-date))))
-
-(defun kz/org-schedule-persian (arg)
-  "Set a SCHEDULED date using a Persian (Jalali) date."
-  (interactive "P")
-  (org-schedule arg (format-time-string "%Y-%m-%d" (kz/read-persian-date))))
 
 (defun kz/org-timestamp-to-persian-string (ts)
   "Return the Persian (Jalali) YYYY-MM-DD equivalent of Org timestamp string TS, bracketed."
