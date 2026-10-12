@@ -147,6 +147,31 @@
       (delete-region start end)
       (insert result))))
 
+(defun kz/shell-single-quote (str)
+  (if (string-match-p "\\`[A-Za-z0-9_@%+=:,./-]+\\'" str)
+      str
+    (concat "'" (replace-regexp-in-string "'" "'\\''" str t t) "'")))
+
+(defun kz/restclient-copy-curl-command ()
+  "Copy the restclient request at point as a readable curl command."
+  (interactive)
+  (require 'restclient)
+  (restclient-http-parse-current-and-do
+   (lambda (method url headers entity)
+     (let ((parts (append
+                   (list (concat "curl"
+                                 (unless (string= method "GET")
+                                   (concat " -X " method))
+                                 " " (kz/shell-single-quote url)))
+                   (mapcar (lambda (header)
+                             (concat "-H " (kz/shell-single-quote
+                                            (format "%s: %s" (car header) (cdr header)))))
+                           (reverse headers))
+                   (when (> (length (string-trim entity)) 0)
+                     (list (concat "--data-raw " (kz/shell-single-quote (string-trim entity))))))))
+       (kill-new (mapconcat #'identity parts " \\\n  "))
+       (message "curl command copied to clipboard.")))))
+
 (defun kz/paste-clipboard-file ()
   "Copy the file(s) referenced by the clipboard into `default-directory'.
 Reads the `text/uri-list' clipboard target set by file managers, falling
@@ -172,3 +197,11 @@ always copied, never moved, even when they were cut."
         (copy-file file default-directory 1)))
     (message "Pasted %d file(s) into %s"
              (length files) (abbreviate-file-name default-directory))))
+
+(defun kz/get-commit-msg-suggestion-from-claude ()
+  (interactive)
+  (insert (string-trim-right (shell-command-to-string (concat
+                                                       "claude -p 'suggest a good commit message for git diff of: "
+                                                       (vc-root-dir)
+                                                       "(your output should only be the git commit)'")))))
+

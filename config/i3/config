@@ -208,8 +208,6 @@ bindsym XF86AudioMute exec "amixer -q sset Master,0 toggle"
 # bindsym XF86AudioPrev exec mpc prev
 bindsym XF86MonBrightnessUp exec xbacklight -inc 5
 bindsym XF86MonBrightnessDown exec xbacklight -dec 5
-bindsym $mod+t exec xinput list | grep -i touchpad | rg 'id=[0-9]+' -o | rg '[0-9]+' -o | xargs xinput disable
-bindsym $mod+shift+t exec xinput list | grep -i touchpad | rg 'id=[0-9]+' -o | rg '[0-9]+' -o | xargs xinput enable
 
 bindsym $mod+shift+c exec python3 /home/kamyab/Projects/Go/clippy-cycle/src/clippy.py push
 bindsym $mod+shift+v exec python3 /home/kamyab/Projects/Go/clippy-cycle/src/clippy.py pop

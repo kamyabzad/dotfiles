@@ -37,7 +37,7 @@
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (setq-default indent-tabs-mode nil)
 (setf dired-kill-when-opening-new-dired-buffer t)
-(set-frame-parameter nil 'alpha-background 90)
+(set-frame-parameter nil 'alpha-background 100)
 (setq scroll-conservatively 1)
 (setq use-short-answers t)
 (setq confirm-nonexistent-file-or-buffer nil)
@@ -291,6 +291,13 @@
   (kz/enable-venv-from-pyrightconfig)
   (projectile-find-file))
 
+(defun kz/open-org-project-on-startup ()
+  (when (get-buffer dashboard-buffer-name)
+    (with-current-buffer dashboard-buffer-name
+      (setq default-directory (expand-file-name "~/org/")))))
+
+(add-hook 'window-setup-hook #'kz/open-org-project-on-startup)
+
 (defun kz/open-emacs-config ()
   (interactive)
   (persp-switch "main")
@@ -479,7 +486,10 @@
 
 (use-package rust-mode)
 
-(use-package restclient)
+(use-package restclient
+  :mode ("\\.http\\'" . restclient-mode)
+  :bind (:map restclient-mode-map
+              ("C-c C-u" . kz/restclient-copy-curl-command)))
 
 (use-package elpy
   :defer t)
@@ -660,6 +670,7 @@
   (persp-mode t)
   :custom
   (persp-mode-prefix-key (kbd "C-c M-p"))
+  (persp-initial-frame-name "org")
   :config
   (setq persp-sort 'oldest))
 
