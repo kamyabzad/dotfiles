@@ -191,7 +191,15 @@
   (setq doom-themes-enable-bold t)
   (setq doom-themes-enable-italic t)
   (column-number-mode 1)
-  (load-theme 'doom-xcode))
+  (load-theme 'doom-gruvbox)
+  (custom-set-faces
+   '(font-lock-keyword-face       ((t (:weight bold))))
+   '(font-lock-function-name-face ((t (:weight bold))))
+   '(font-lock-type-face          ((t (:weight semi-bold))))
+   '(font-lock-builtin-face       ((t (:weight semi-bold))))
+   '(font-lock-comment-face       ((t (:slant italic))))
+   '(tree-sitter-hl-face:function.call ((t (:weight normal))))
+   '(tree-sitter-hl-face:property      ((t (:slant italic))))))
 
 (use-package beacon
   :config
@@ -316,13 +324,14 @@
   (general-evil-setup t)
 
   (general-create-definer kz/leader-define-key
-    :states '(normal visual emacs)
+    :states '(normal visual)
     :prefix "SPC")
 
   (kz/leader-define-key
     "`" 'mode-line-other-buffer
     "/"  'kz/search-project
     "SPC" 'projectile-find-file
+    "u" 'universal-argument
     "a" 'avy-goto-word-0
     "bB" 'switch-to-buffer
     "bb" 'persp-counsel-switch-buffer
@@ -337,6 +346,7 @@
     "dar" 'kz/docker-restart-container
     "das" 'kz/docker-start-container
     "dd" 'docker
+    "dk" `kubed-transient
     "dc" 'docker-compose
     "fD" 'kz/delete-visiting-file
     "fR" 'kz/rename-visiting-file
@@ -676,6 +686,8 @@
 
 (use-package docker
   :ensure t)
+
+(use-package kubed)
 
 (use-package hledger-mode)
 
