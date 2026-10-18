@@ -65,7 +65,8 @@
 (load custom-file)
 (add-to-list 'exec-path "~/.local/bin")
 
-(set-face-attribute 'default nil :font "JetBrains Mono" :height 130)
+(set-face-attribute 'default nil :font "Fantasque Sans Mono" :height 150)
+(setq line-spacing 3)
 (modify-syntax-entry ?_ "w")
 
 ;; font for arabic characters
