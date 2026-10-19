@@ -14,3 +14,10 @@
                 (org-babel-execute-src-block)
                 (goto-char (starting-point))))))))
   
+
+(defun kz/open-org-project-on-startup ()
+  (when (get-buffer dashboard-buffer-name)
+    (with-current-buffer dashboard-buffer-name
+      (setq default-directory (expand-file-name "~/org/")))))
+
+(add-hook 'window-setup-hook #'kz/open-org-project-on-startup)

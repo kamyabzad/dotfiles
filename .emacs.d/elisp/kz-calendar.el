@@ -17,12 +17,6 @@
                (calendar-persian-to-absolute (list month day year)))))
     (encode-time 0 0 0 (nth 1 greg) (nth 0 greg) (nth 2 greg))))
 
-(defun kz/read-persian-date ()
-  "Prompt for a Persian (Jalali) date as YYYY-MM-DD and return its Emacs time value."
-  (let ((parts (mapcar #'string-to-number
-                        (split-string (read-string "Persian date (YYYY-MM-DD): ") "-"))))
-    (apply #'kz/persian-date-to-time parts)))
-
 (defun kz/org-roam-dailies--file-to-gregorian-date (file)
   "Convert a Persian-dated daily-note FILE to a Gregorian (MONTH DAY YEAR) date."
   (when-let* ((base (file-name-sans-extension (file-name-nondirectory file)))

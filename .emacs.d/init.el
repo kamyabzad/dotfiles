@@ -50,10 +50,6 @@
             (display-line-numbers-mode 1)
             (toggle-truncate-lines 1)))
 
-(dolist (file (directory-files "~/.emacs.d/elisp/" t "\\.el$"))
-  (load-file file))
-
-
 ;; Get rid of annoying backup/autosave/lock files
 (setq create-lockfiles nil)
 (setq temporary-file-directory "~/.emacs.d/tmp/")
@@ -67,25 +63,6 @@
 
 (setq line-spacing 3)
 (modify-syntax-entry ?_ "w")
-
-(defun kz/setup-fonts (&optional frame)
-  (when (display-graphic-p frame)
-    (set-face-attribute 'default nil :font "Fantasque Sans Mono" :height 150)
-    (set-fontset-font
-     "fontset-default"
-     (cons (decode-char 'ucs #x0600) (decode-char 'ucs #x06ff))
-     "IRANSansX")
-    (unless (query-fontset "fontset-prose")
-      (create-fontset-from-fontset-spec "-*-*-*-*-*--*-*-*-*-*-*-fontset-prose"))
-    (set-fontset-font "fontset-prose" '(#x600 . #x6ff) "IRANSansX")
-    (set-face-attribute 'kz/prose-face nil :fontset "fontset-prose")))
-
-(defface kz/prose-face '((t))
-  "Face used in `kz/prose-mode' buffers.")
-
-(if (daemonp)
-    (add-hook 'after-make-frame-functions #'kz/setup-fonts)
-  (kz/setup-fonts))
 
 (setq ediff-split-window-function 'split-window-horizontally)
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
@@ -118,6 +95,13 @@
 (eval-when-compile
   (require 'use-package))
 (setq use-package-always-ensure t)
+
+(dolist (file (directory-files "~/.emacs.d/elisp/" t "\\.el$"))
+  (load-file file))
+
+(if (daemonp)
+    (add-hook 'after-make-frame-functions #'kz/setup-fonts)
+  (kz/setup-fonts))
 
 (use-package persian-calendar
   :ensure nil
@@ -291,39 +275,6 @@
   (with-eval-after-load 'magit-status
 	(define-key magit-status-mode-map (kbd "SPC") nil)))
 
-(defun kz/enable-venv-from-pyrightconfig ()
-  (interactive)
-  (if (file-exists-p (concat (projectile-project-root) "pyrightconfig.json"))
-      (when (cdr (assoc 'venv (json-read-file (concat (projectile-project-root) "pyrightconfig.json"))))
-		 (pyvenv-workon (cdr (assoc 'venv (json-read-file (concat (projectile-project-root) "pyrightconfig.json"))))))
-    (pyvenv-deactivate)))
-
-(defun kz/projectile-switch-project-action ()
-  (persp-switch (projectile-project-name))
-  (when (vc-root-dir) (magit-status))
-  (kz/enable-venv-from-pyrightconfig)
-  (projectile-find-file))
-
-(defun kz/open-org-project-on-startup ()
-  (when (get-buffer dashboard-buffer-name)
-    (with-current-buffer dashboard-buffer-name
-      (setq default-directory (expand-file-name "~/org/")))))
-
-(add-hook 'window-setup-hook #'kz/open-org-project-on-startup)
-
-(defun kz/open-emacs-config ()
-  (interactive)
-  (persp-switch "main")
-  (find-file "~/.emacs.d/init.el"))
-
-(defun kz/evil-surround-word ()
-  (interactive)
-  (execute-kbd-macro (concat "viwS" (char-to-string (read-char)))))
-
-(defun kz/search-project ()
-  (interactive)
-  (counsel-git-grep))
-
 (use-package general
   :config
   (general-evil-setup t)
@@ -482,6 +433,15 @@
   (setq lua-indent-level 4))
 
 (use-package go-mode
+  :preface
+  (defun kz/go-settings ()
+    (yas-minor-mode)
+    (setq gofmt-command "gofmt")
+    (add-hook 'before-save-hook 'gofmt-before-save)
+    (if (not (string-match "go" compile-command))
+        (set (make-local-variable 'compile-command)
+             "go build -v && go test -v && go vet")))
+  :hook (go-mode . kz/go-settings)
   :config
   (fset 'godef-jump 'lsp-find-definition))
 
@@ -499,7 +459,8 @@
 
 (use-package typescript-mode)
 
-(use-package rust-mode)
+(use-package rust-mode
+  :hook (rust-mode . yas-minor-mode))
 
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
@@ -511,32 +472,14 @@
 
 (use-package python-black
   :defer t
-  :demand t)
+  :demand t
+  :hook (python-mode . python-black-on-save-mode-enable-dwim))
 
 (use-package pyvenv
   :defer t
   :hook (python-mode . pyvenv-mode))
 
 (use-package python-pytest)
-
-(defun kz/python-settings ()
-  (python-black-on-save-mode-enable-dwim))
-
-(add-hook 'python-mode-hook 'kz/python-settings)
-
-(defun kz/go-settings ()
-  (yas-minor-mode)
-  (setq gofmt-command "gofmt")
-  (add-hook 'before-save-hook 'gofmt-before-save)
-  (if (not (string-match "go" compile-command))
-      (set (make-local-variable 'compile-command)
-           "go build -v && go test -v && go vet")))
-
-(defun kz/rust-settings ()
-  (yas-minor-mode))
-
-(add-hook 'go-mode-hook 'kz/go-settings)
-(add-hook 'rust-mode-hook 'kz/rust-settings)
 
 (use-package doom-snippets
   :load-path "~/.emacs.d/snippets"
@@ -639,20 +582,6 @@
       (ispell-set-spellchecker-params)
       (ispell-hunspell-add-multi-dic "en_US,fa_IR"))))
 
-(defun kz/prose-mode ()
-  (interactive)
-  (visual-line-mode 1)
-  (setq visual-fill-column-width 80
-        visual-fill-column-center-text t)
-  (visual-fill-column-mode 1)
-  (setq-local word-wrap t)
-  (buffer-face-set 'kz/prose-face)
-  (setq-local ispell-local-dictionary "en_US,fa_IR")
-  (when (bound-and-true-p flyspell-mode)
-    (flyspell-buffer))
-  (evil-local-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-local-set-key 'motion "k" 'evil-previous-visual-line))
-
 (use-package visual-fill-column
   :hook
   (org-mode . kz/prose-mode)
@@ -705,43 +634,3 @@
   :commands (dockerdock))
 
 (use-package hledger-mode)
-
-(require 'reformatter)
-(reformatter-define lua-format
-  :program "lua-format"
-  :args (kz/lua-format--make-args)
-  :lighter " LuaFMT")
-(defun kz/lua-format--make-args ()
-    (let ((format-file (concat (projectile-project-root) ".lua-format")))
-      (if (file-exists-p format-file) '(concat "-i --config=" format-file)
-        '("-i"))))
-
-(defun kz/format()
-  (interactive)
-  (when (eq major-mode 'python-mode)
-    (if (eq evil-state 'visual)
-        (python-black-region evil-visual-beginning evil-visual-end)
-      (python-black-buffer)))
-  (when (eq major-mode 'lua-mode) (lua-format-buffer))
-  (when (eq major-mode 'go-mode) (gofmt)))
-
-(defun kz/magit-diff-file ()
-  (interactive)
-  (let ((current (current-buffer))
-        (other (magit-find-file-other-window (completing-read "from revision: " (magit-list-refnames)) (buffer-file-name))))
-    (ediff-buffers current other)))
-
-(defun kz/find-file-in-new-window-layout ()
-  (interactive)
-  (progn
-    (projectile-find-file)
-    (delete-other-windows)))
-
-
-(defun kz/sudo-find-file ()
-  (interactive)
-  (find-file (read-file-name "Sudo find file: " "/sudo::")))
-
-(defun kz/uuid4 ()
-  (interactive)
-  (insert (uuid-string)))
