@@ -65,23 +65,27 @@
 (load custom-file)
 (add-to-list 'exec-path "~/.local/bin")
 
-(set-face-attribute 'default nil :font "Fantasque Sans Mono" :height 150)
 (setq line-spacing 3)
 (modify-syntax-entry ?_ "w")
 
-;; font for arabic characters
-(set-fontset-font
-   "fontset-default"
-   (cons (decode-char 'ucs #x0600) (decode-char 'ucs #x06ff)) ; arabic
-   "IRANSansX")
-
-(unless (query-fontset "fontset-prose")
-  (create-fontset-from-fontset-spec "-*-*-*-*-*--*-*-*-*-*-*-fontset-prose"))
-(set-fontset-font "fontset-prose" '(#x600 . #x6ff) "IRANSansX")
+(defun kz/setup-fonts (&optional frame)
+  (when (display-graphic-p frame)
+    (set-face-attribute 'default nil :font "Fantasque Sans Mono" :height 150)
+    (set-fontset-font
+     "fontset-default"
+     (cons (decode-char 'ucs #x0600) (decode-char 'ucs #x06ff))
+     "IRANSansX")
+    (unless (query-fontset "fontset-prose")
+      (create-fontset-from-fontset-spec "-*-*-*-*-*--*-*-*-*-*-*-fontset-prose"))
+    (set-fontset-font "fontset-prose" '(#x600 . #x6ff) "IRANSansX")
+    (set-face-attribute 'kz/prose-face nil :fontset "fontset-prose")))
 
 (defface kz/prose-face '((t))
   "Face used in `kz/prose-mode' buffers.")
-(set-face-attribute 'kz/prose-face nil :fontset "fontset-prose")
+
+(if (daemonp)
+    (add-hook 'after-make-frame-functions #'kz/setup-fonts)
+  (kz/setup-fonts))
 
 (setq ediff-split-window-function 'split-window-horizontally)
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
@@ -346,8 +350,8 @@
     "daS" 'kz/docker-stop-container
     "dar" 'kz/docker-restart-container
     "das" 'kz/docker-start-container
-    "dd" 'docker
-    "dk" `kubed-transient
+    "dd" 'dockerdock
+    "dk" `kubit
     "dc" 'docker-compose
     "fD" 'kz/delete-visiting-file
     "fR" 'kz/rename-visiting-file
@@ -689,6 +693,16 @@
   :ensure t)
 
 (use-package kubed)
+
+(use-package kubit
+  :ensure nil
+  :load-path "~/Projects/Emacs/kubit/"
+  :commands (kubit))
+
+(use-package dockerdock
+  :ensure nil
+  :load-path "~/Projects/Emacs/dockerdock.el/"
+  :commands (dockerdock))
 
 (use-package hledger-mode)
 
