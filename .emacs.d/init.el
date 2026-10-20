@@ -626,7 +626,8 @@
 
   (defun persp-format-name (name)
     "Override to include number in modeline string"
-    (let ((string-name (format "%s-%s" (persp-number name) name)))
+    (let ((string-name (propertize (format "%s-%s" (persp-number name) name)
+                                   'kz/persp-name name)))
       (if (equal name (persp-current-name))
           (propertize string-name 'face 'persp-selected-face)
         (cond ((eq persp-show-modestring 'header)
@@ -637,6 +638,14 @@
                (propertize string-name
                            'local-map persp-mode-line-map
                            'mouse-face 'mode-line-highlight))))))
+
+  (defun persp-mode-line-click (event)
+    (interactive "e")
+    (let* ((posn (posn-string (event-start event)))
+           (name (and posn (get-text-property (cdr posn) 'kz/persp-name (car posn)))))
+      (when name
+        (persp-switch name)
+        (persp-update-modestring))))
 
   (defun kz/filter-persp-buffers (buf)
     (string-match-p
