@@ -187,8 +187,9 @@
    '(font-lock-type-face          ((t (:weight semi-bold))))
    '(font-lock-builtin-face       ((t (:weight semi-bold))))
    '(font-lock-comment-face       ((t (:slant italic))))
-   '(tree-sitter-hl-face:function.call ((t (:weight normal))))
-   '(tree-sitter-hl-face:property      ((t (:slant italic))))))
+   '(font-lock-function-call-face  ((t (:weight normal))))
+   '(font-lock-property-use-face   ((t (:slant italic))))
+   '(font-lock-property-name-face  ((t (:slant italic))))))
 
 (use-package beacon
   :config
@@ -302,7 +303,7 @@
     "dar" 'kz/docker-restart-container
     "das" 'kz/docker-start-container
     "dd" 'dockerdock
-    "dk" `kubit
+    "dk" 'kz/project-kubit
     "dc" 'docker-compose
     "fD" 'kz/delete-visiting-file
     "fR" 'kz/rename-visiting-file
@@ -384,7 +385,7 @@
 
   (general-create-definer kz/python-mode-define-key
     :states '(normal)
-    :keymaps 'python-mode-map
+    :keymaps '(python-mode-map python-ts-mode-map)
     :prefix "SPC c")
 
   (kz/python-mode-define-key
@@ -419,7 +420,7 @@
 
 (use-package lsp-mode
   :defer t
-  :hook ((python-mode go-mode lua-mode rust-mode) . lsp)
+  :hook ((python-base-mode go-ts-mode lua-mode lua-ts-mode rust-mode rust-ts-mode) . lsp)
   :commands lsp
   :config
   (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]tests\\'"))
@@ -430,9 +431,10 @@
 
 (use-package lua-mode
   :config
-  (setq lua-indent-level 4))
+  (setq lua-indent-level 4)
+  (setq lua-ts-indent-offset 4))
 
-(use-package go-mode
+(use-package go-ts-mode
   :preface
   (defun kz/go-settings ()
     (yas-minor-mode)
@@ -441,7 +443,7 @@
     (if (not (string-match "go" compile-command))
         (set (make-local-variable 'compile-command)
              "go build -v && go test -v && go vet")))
-  :hook (go-mode . kz/go-settings)
+  :hook (go-ts-mode . kz/go-settings)
   :config
   (fset 'godef-jump 'lsp-find-definition))
 
@@ -460,7 +462,7 @@
 (use-package typescript-mode)
 
 (use-package rust-mode
-  :hook (rust-mode . yas-minor-mode))
+  :hook ((rust-mode rust-ts-mode) . yas-minor-mode))
 
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
@@ -473,11 +475,11 @@
 (use-package python-black
   :defer t
   :demand t
-  :hook (python-mode . python-black-on-save-mode-enable-dwim))
+  :hook (python-base-mode . python-black-on-save-mode-enable-dwim))
 
 (use-package pyvenv
   :defer t
-  :hook (python-mode . pyvenv-mode))
+  :hook (python-base-mode . pyvenv-mode))
 
 (use-package python-pytest)
 
@@ -587,12 +589,13 @@
   (org-mode . kz/prose-mode)
   (markdown-mode . kz/prose-mode))
   
-(use-package tree-sitter
-  :defer t
-  :hook (prog-mode lambda ()
-                     (require 'tree-sitter-langs)
-                     (tree-sitter-mode 1)
-                     (tree-sitter-hl-mode 1)))
+(use-package treesit
+  :ensure nil
+  :init
+  (add-to-list 'treesit-major-mode-remap-alist '(json-mode . json-ts-mode))
+  (setopt treesit-auto-install-grammar 'always
+          treesit-font-lock-level 4
+          treesit-enabled-modes t))
 
 (use-package pdf-tools
   :defer t
@@ -616,7 +619,48 @@
   (persp-mode-prefix-key (kbd "C-c M-p"))
   (persp-initial-frame-name "org")
   :config
-  (setq persp-sort 'oldest))
+  (setq persp-sort 'oldest)
+
+  (defun persp-number (name)
+    (+ 1 (cl-position name (persp-names))))
+
+  (defun persp-format-name (name)
+    "Override to include number in modeline string"
+    (let ((string-name (format "%s-%s" (persp-number name) name)))
+      (if (equal name (persp-current-name))
+          (propertize string-name 'face 'persp-selected-face)
+        (cond ((eq persp-show-modestring 'header)
+               (propertize string-name
+                           'local-map persp-header-line-map
+                           'mouse-face 'header-line-highlight))
+              ((eq persp-show-modestring t)
+               (propertize string-name
+                           'local-map persp-mode-line-map
+                           'mouse-face 'mode-line-highlight))))))
+
+  (defun kz/filter-persp-buffers (buf)
+    (string-match-p
+     "^[^*]\\|\\*scratch\\*"
+     (buffer-name buf)))
+
+
+  (defun persp--switch-buffer-ivy-counsel-helper (arg fallback)
+    (unless (featurep 'ivy)
+      (user-error "Ivy not loaded"))
+    (declare-function ivy-read "ivy.el")
+    (if (and persp-mode (null arg))
+        (let ((real-ivy-read (symbol-function 'ivy-read))
+              (current-bufs
+               (seq-filter #'kz/filter-persp-buffers (persp-current-buffers* t))))
+          (cl-letf (((symbol-function 'ivy-read)
+                     (lambda (&rest args)
+                       (apply real-ivy-read
+                              (append args
+                                      (list :predicate
+                                            (lambda (b)
+                                              (memq (cdr b) current-bufs))))))))
+            (funcall fallback)))
+      (funcall fallback))))
 
 (use-package docker
   :ensure t)

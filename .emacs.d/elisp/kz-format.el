@@ -14,9 +14,9 @@
 
 (defun kz/format()
   (interactive)
-  (when (eq major-mode 'python-mode)
+  (when (derived-mode-p 'python-base-mode)
     (if (eq evil-state 'visual)
         (python-black-region evil-visual-beginning evil-visual-end)
       (python-black-buffer)))
-  (when (eq major-mode 'lua-mode) (lua-format-buffer))
+  (when (derived-mode-p 'lua-mode 'lua-ts-mode) (lua-format-buffer))
   (when (eq major-mode 'go-mode) (gofmt)))
