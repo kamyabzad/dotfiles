@@ -74,4 +74,10 @@ WHAT is `deadline' or `scheduled'."
                end t)
           (replace-match "" nil nil nil 1))))))
 
+
+(defun kz/calendar-gregorian-print-date ()
+  "Print the Gregorian date under the cursor in the calendar."
+  (interactive)
+  (message "%s" (calendar-date-string (calendar-cursor-to-date t))))
+
 (advice-add 'org-remove-timestamp-with-keyword :before #'kz/org-remove-persian-date-before-removal)

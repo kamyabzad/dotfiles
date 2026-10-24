@@ -59,7 +59,9 @@
       `((".*" ,temporary-file-directory t)))
 (setq custom-file "~/.emacs-custom.el")
 (load custom-file)
-(add-to-list 'exec-path "~/.local/bin")
+(let ((dir (expand-file-name "~/.local/bin")))
+  (add-to-list 'exec-path dir)
+  (setenv "PATH" (concat dir path-separator (getenv "PATH"))))
 
 (setq line-spacing 3)
 (modify-syntax-entry ?_ "w")
@@ -109,9 +111,13 @@
   :after calendar
   :demand t
   :commands (persian-calendar-mode)
-  :bind (:map calendar-mode-map ("P" . persian-calendar-mode))
   :custom
-  (persian-calendar-auto-enable 1))
+  (persian-calendar-auto-enable 1)
+  :config
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal calendar-mode-map
+      "P" #'persian-calendar-mode
+      "p" #'kz/calendar-gregorian-print-date)))
 
 (use-package dash)
 
@@ -294,6 +300,7 @@
     "bb" 'persp-counsel-switch-buffer
     "bd" 'kill-current-buffer
     "br" 'revert-buffer
+    "cc" 'kz/claude-comment
     "cf" 'kz/format
     "dS" 'kz/docker-project-stop-container
     "dr" 'kz/docker-project-restart-container
@@ -686,4 +693,5 @@
   :load-path "~/Projects/Emacs/dockerdock.el/"
   :commands (dockerdock))
 
-(use-package hledger-mode)
+(use-package hledger-mode
+  :mode ("\\.journal\\'" . hledger-mode))
