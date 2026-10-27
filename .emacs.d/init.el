@@ -37,7 +37,7 @@
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (setq-default indent-tabs-mode nil)
 (setf dired-kill-when-opening-new-dired-buffer t)
-(set-frame-parameter nil 'alpha-background 100)
+(set-frame-parameter nil 'alpha-background 90)
 (setq scroll-conservatively 1)
 (setq use-short-answers t)
 (setq confirm-nonexistent-file-or-buffer nil)
@@ -80,6 +80,20 @@
              '("\\*help\\*\\|\\*pytest\\*\\|\\*Gofmt Errors\\*"
                (display-buffer-reuse-window display-buffer-at-bottom)
                (window-height . 0.25 )))
+
+(defun kz/split-window-sensibly-right (&optional window)
+  (let ((window (or window (selected-window))))
+    (or (and (window-splittable-p window t)
+             (with-selected-window window (split-window-right)))
+        (and (window-splittable-p window)
+             (with-selected-window window (split-window-below)))
+        (and (eq window (frame-root-window (window-frame window)))
+             (not (window-minibuffer-p window))
+             (let ((split-width-threshold 0))
+               (when (window-splittable-p window t)
+                 (with-selected-window window (split-window-right))))))))
+
+(setq split-window-preferred-function #'kz/split-window-sensibly-right)
 
 (setq calendar-week-start-day 6)
 
@@ -235,6 +249,17 @@
   :config
   (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/tmp/undo-tree/"))))
 
+(use-package kirigami
+  :config
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal 'global
+      "zo" #'kirigami-open-fold
+      "zO" #'kirigami-open-fold-rec
+      "zc" #'kirigami-close-fold
+      "za" #'kirigami-toggle-fold
+      "zr" #'kirigami-open-folds
+      "zm" #'kirigami-close-folds)))
+
 (use-package evil
   :init
   (setq evil-want-integration t)
@@ -301,6 +326,8 @@
     "bd" 'kill-current-buffer
     "br" 'revert-buffer
     "cc" 'kz/claude-comment
+    "cp" 'kz/claude-switch
+    "cs" 'kz/claude-comment-send
     "cf" 'kz/format
     "dS" 'kz/docker-project-stop-container
     "dr" 'kz/docker-project-restart-container
@@ -445,6 +472,8 @@
   :preface
   (defun kz/go-settings ()
     (yas-minor-mode)
+    (setq-local indent-tabs-mode t)
+    (setq-local go-ts-mode-indent-offset tab-width)
     (setq gofmt-command "gofmt")
     (add-hook 'before-save-hook 'gofmt-before-save)
     (if (not (string-match "go" compile-command))
@@ -475,6 +504,13 @@
   :mode ("\\.http\\'" . restclient-mode)
   :bind (:map restclient-mode-map
               ("C-c C-u" . kz/restclient-copy-curl-command)))
+
+(use-package markdown-ts-mode
+  :mode ("\\.md\\'" . markdown-ts-mode))
+
+(use-package markdown-ts-appear
+  :vc (:url "https://github.com/Thysrael/markdown-ts-appear" :rev :newest)
+  :hook (markdown-ts-mode . markdown-ts-appear-mode))
 
 (use-package elpy
   :defer t)
@@ -509,7 +545,7 @@
  
 (use-package org
   :defer t
-  :init 
+  :init
   (require 'ob-python)
   :hook (org-mode lambda ()
 				  (display-line-numbers-mode 0)
@@ -520,6 +556,7 @@
   :bind ("C-c h" . 'org-insert-heading)
   :bind ("C-c s" . 'org-insert-subheading)
   :bind ("C-c a" . 'org-agenda)
+  :bind (:map org-mode-map ("C-c b" . kz/org-insert-src-block))
   :config
   (setq org-agenda-format-date #'kz/org-agenda-format-date-persian)
   (setq org-directory "~/Org/")
@@ -594,7 +631,7 @@
 (use-package visual-fill-column
   :hook
   (org-mode . kz/prose-mode)
-  (markdown-mode . kz/prose-mode))
+  (markdown-ts-mode . kz/prose-mode))
   
 (use-package treesit
   :ensure nil
@@ -695,3 +732,8 @@
 
 (use-package hledger-mode
   :mode ("\\.journal\\'" . hledger-mode))
+
+(use-package agent-shell
+  :ensure t
+  :custom
+  (agent-shell-anthropic-default-model-id "claude-opus-5-5"))
