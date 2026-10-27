@@ -370,6 +370,7 @@
     "wV" 'kz/split-window-right-all
     "wp" 'winner-undo
     "wn" 'winner-redo
+    "wb" 'kz/winner-cycle-buffer-layouts
     "ww" 'ace-window
     "ni" 'org-roam-node-insert
     "nf" 'org-roam-node-find
@@ -723,7 +724,9 @@
 (use-package kubit
   :ensure nil
   :load-path "~/Projects/Emacs/kubit/"
-  :commands (kubit))
+  :commands (kubit)
+  :config
+  (advice-add 'kubit :after (lambda (&rest _) (delete-other-windows))))
 
 (use-package dockerdock
   :ensure nil
