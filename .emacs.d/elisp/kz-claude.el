@@ -3,35 +3,6 @@
 (defvar kz/claude-extra-args '("--permission-mode" "acceptEdits"
                                "--allowedTools" "Read" "Edit" "Grep" "Glob"))
 
-(defun kz/claude--comment-line-text ()
-  (save-excursion
-    (beginning-of-line)
-    (when (and comment-start-skip
-               (looking-at (concat "[ \t]*\\(?:" comment-start-skip "\\)")))
-      (let ((text (buffer-substring-no-properties (match-end 0) (line-end-position))))
-        (when (and comment-end-skip (not (string-empty-p comment-end)))
-          (setq text (replace-regexp-in-string (concat "\\(?:" comment-end-skip "\\)\\'") "" text)))
-        (string-trim text)))))
-
-(defun kz/claude--comment-block ()
-  (comment-normalize-vars)
-  (when (kz/claude--comment-line-text)
-    (let ((start (line-beginning-position))
-          (end (line-end-position)))
-      (save-excursion
-        (while (and (zerop (forward-line -1)) (kz/claude--comment-line-text))
-          (setq start (line-beginning-position))))
-      (save-excursion
-        (while (and (zerop (forward-line 1)) (not (eobp)) (kz/claude--comment-line-text))
-          (setq end (line-end-position))))
-      (let ((lines '()))
-        (save-excursion
-          (goto-char start)
-          (while (progn (push (kz/claude--comment-line-text) lines)
-                        (and (zerop (forward-line 1)) (bolp) (<= (point) end)))))
-        (list start end (string-join (nreverse lines) "\n"))))))
-
-
 (defun kz/claude-comment ()
   "Send the comment at point to Claude as an instruction for this file.
 The comment block is removed before Claude edits the file.  When point
@@ -83,51 +54,45 @@ The buffer is named *{project}-claude-NAME*."
 
 
 
-(defun kz/claude-comment-send ()
-  "Send the comment at point to an existing Claude shell for the project.
-Like `kz/claude-comment', but instead of creating a new shell, pick an
-existing *{project}-claude-{name}* buffer via `completing-read' (as in
-`kz/claude-switch')."
+(defun kz/claude--shell-name ()
+  (when (string-match "\\`\\*.+-claude-\\(.+\\)\\*\\'" (buffer-name))
+    (match-string 1 (buffer-name))))
+
+(defun kz/claude--capture-name ()
+  (when-let ((name (kz/claude--shell-name)))
+    `((kz-claude-name . ,name))))
+
+(defun kz/claude--unique-buffer-name (project name)
+  (let ((candidate (format "*%s-claude-%s*" project name))
+        (n 2))
+    (while (get-buffer candidate)
+      (setq candidate (format "*%s-claude-%s-%d*" project name n)
+            n (1+ n)))
+    candidate))
+
+(defun kz/claude--resume-with-project-name (orig session-id &rest args)
+  (let* ((name (or (agent-recall-metadata-get session-id 'kz-claude-name)
+                   "main"))
+         (agent-shell-buffer-name-format
+          (lambda (_agent _project)
+            (kz/claude--unique-buffer-name (projectile-project-name) name))))
+    (apply orig session-id args)))
+
+(with-eval-after-load 'agent-recall
+  (add-hook 'agent-recall-capture-functions #'kz/claude--capture-name)
+  (advice-add 'agent-recall--start-resume :around
+              #'kz/claude--resume-with-project-name))
+
+
+(defun kz/send-to-project-claude ()
+  "Like `agent-shell-send-region-to', but only offer shells in the current project."
   (interactive)
-  (unless buffer-file-name (user-error "Buffer is not visiting a file"))
-  (let* ((block (kz/claude--comment-block))
-         (instruction (if block
-                          (nth 2 block)
-                        (read-string "Claude: ")))
-         (file buffer-file-name)
-         (line (if block
-                   (line-number-at-pos (nth 0 block))
-                 (line-number-at-pos)))
-         (project (projectile-project-name))
-         (regex (format "\\`\\*%s-claude-\\(.*\\)\\*\\'" (regexp-quote project)))
-         (matches (cl-loop for buf in (buffer-list)
-                           for bname = (buffer-name buf)
-                           when (string-match regex bname)
-                           collect (cons (match-string 1 bname) buf)))
-         (buffer (cond
-                  ((null matches)
-                   (user-error "No Claude shell for project %s" project))
-                  ((= 1 (length matches))
-                   (cdar matches))
-                  (t
-                   (cdr (assoc (completing-read "Claude shell: "
-                                                (mapcar #'car matches) nil t)
-                               matches)))))
-         (prompt (format "File: %s\nInstruction (it was written at line %d, right above the code it refers to; the instruction itself has already been removed from the file):\n%s\n\nApply the instruction or answer the question. If it was a change, only make the requested change."
-                         file line instruction)))
-    (when (string-empty-p (string-trim instruction))
-      (user-error "Empty instruction"))
-    (when block
-      (delete-region (nth 0 block) (min (point-max) (1+ (nth 1 block)))))
-    (save-buffer)
-    (auto-revert-mode 1)
-    (require 'agent-shell)
-    (agent-shell-insert
-     :text prompt
-     :submit t
-     :shell-buffer buffer)
-    (display-buffer buffer)
-    (message "Claude is working on: %s" instruction)))
+  (require 'agent-shell)
+  (let ((buffers (agent-shell-project-buffers)))
+    (unless buffers
+      (user-error "No agent shell for this project"))
+    (cl-letf (((symbol-function 'agent-shell-buffers) (lambda () buffers)))
+      (agent-shell-send-region-to))))
 
 
 (defun kz/claude-switch ()

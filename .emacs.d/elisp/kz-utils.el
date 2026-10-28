@@ -66,10 +66,6 @@ always copied, never moved, even when they were cut."
   (persp-switch "main")
   (find-file "~/.emacs.d/init.el"))
 
-(defun kz/sudo-find-file ()
-  (interactive)
-  (find-file (read-file-name "Sudo find file: " "/sudo::")))
-
 (defun kz/evil-surround-word ()
   (interactive)
   (execute-kbd-macro (concat "viwS" (char-to-string (read-char)))))

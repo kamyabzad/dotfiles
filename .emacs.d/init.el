@@ -145,6 +145,7 @@
   (setq projectile-git-submodule-command "true"))
 
 (use-package counsel
+  :demand t
   :bind ("M-x" . counsel-M-x)
   :bind ("C-x b" . counsel-switch-buffer)
   :bind ("C-x C-b" . counsel-switch-buffer))
@@ -327,8 +328,12 @@
     "br" 'revert-buffer
     "cc" 'kz/claude-comment
     "cp" 'kz/claude-switch
-    "cs" 'kz/claude-comment-send
+    "cP" 'agent-shell-switch-buffer
+    "cs" 'kz/send-to-project-claude
+    "cn" 'kz/claude-new-shell
     "cf" 'kz/format
+    "cr" 'agent-recall-resume
+    "ct" 'agent-shell-open-transcript
     "dS" 'kz/docker-project-stop-container
     "dr" 'kz/docker-project-restart-container
     "ds" 'kz/docker-project-start-container
@@ -342,9 +347,13 @@
     "fD" 'kz/delete-visiting-file
     "fR" 'kz/rename-visiting-file
     "ff" 'counsel-find-file
+    "fF" 'kz/sudo-find-file
+    "fH" 'kz/sudo-open-hosts
+    "fih" 'kz/find-file-in-home
+    "fi/" 'kz/find-file-in-root
+    "fip" 'kz/find-file-in-project-root
     "fp" 'kz/open-emacs-config
     "fs" 'save-buffer
-    "fF" 'kz/sudo-find-file
     "gB" 'magit-blame-addition
     "gdf" 'kz/magit-diff-file
     "gff" 'magit-find-file
@@ -371,6 +380,7 @@
     "wp" 'winner-undo
     "wn" 'winner-redo
     "wb" 'kz/winner-cycle-buffer-layouts
+    "wx" 'kz/winner-delete-layout
     "ww" 'ace-window
     "ni" 'org-roam-node-insert
     "nf" 'org-roam-node-find
@@ -504,7 +514,8 @@
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
   :bind (:map restclient-mode-map
-              ("C-c C-u" . kz/restclient-copy-curl-command)))
+              ("C-c C-u" . kz/restclient-copy-curl-command)
+              ("C-c C-e" . kz/restclient-set-env)))
 
 (use-package markdown-ts-mode
   :mode ("\\.md\\'" . markdown-ts-mode))
@@ -738,5 +749,12 @@
 
 (use-package agent-shell
   :ensure t
+  :hook (agent-shell-mode . agent-recall-track-sessions)
   :custom
   (agent-shell-anthropic-default-model-id "claude-opus-5-5"))
+
+(use-package agent-recall
+  :ensure nil
+  :load-path "~/Projects/Emacs/agent-recall/"
+  :config
+  (setq agent-recall-search-paths '("~/Projects")))

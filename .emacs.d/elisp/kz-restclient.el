@@ -130,3 +130,47 @@
                      (list (concat "--data-raw " (kz/shell-single-quote (string-trim entity))))))))
        (kill-new (mapconcat #'identity parts " \\\n  "))
        (message "curl command copied to clipboard.")))))
+
+(defun kz/restclient-apply-env (vars)
+  (let ((env (cdr (assoc ":env" vars))))
+    (if (or (null env) (string-empty-p (string-trim env)))
+        vars
+      (let ((prefix (concat ":" (string-trim env) "_"))
+            (aliases nil))
+        (dolist (var vars)
+          (when (string-prefix-p prefix (car var))
+            (push (cons (concat ":" (substring (car var) (length prefix))) (cdr var))
+                  aliases)))
+        (append (nreverse aliases) vars)))))
+
+(with-eval-after-load 'restclient
+  (advice-add 'restclient-find-vars-before-point :filter-return #'kz/restclient-apply-env))
+
+(defun kz/restclient-envs ()
+  (let ((pairs nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^:\\([^_:= \t\n]+\\)_\\([^:= \t\n]+\\)[ \t]*:?=" nil t)
+        (push (cons (match-string-no-properties 1) (match-string-no-properties 2)) pairs)))
+    (setq pairs (nreverse pairs))
+    (delete-dups
+     (delq nil (mapcar (lambda (pair)
+                         (when (seq-some (lambda (other)
+                                           (and (equal (cdr other) (cdr pair))
+                                                (not (equal (car other) (car pair)))))
+                                         pairs)
+                           (car pair)))
+                       pairs)))))
+
+(defun kz/restclient-set-env (env)
+  "Set the restclient :env override to ENV. Empty input clears the override."
+  (interactive
+   (list (completing-read
+          (format "Env (current: %s): "
+                  (or (cdr (assoc ":env" restclient-var-overrides)) "file"))
+          (kz/restclient-envs))))
+  (if (string-empty-p env)
+      (progn (restclient-remove-var ":env")
+             (message "restclient env override cleared"))
+    (restclient-set-var ":env" env)
+    (message "restclient env: %s" env)))
