@@ -275,6 +275,18 @@
   (evil-mode 1)
   (evil-global-set-key 'motion "j" 'evil-next-line)
   (evil-global-set-key 'motion "k" 'evil-previous-line)
+  (evil-define-motion kz/evil-visual-left (count)
+    :type exclusive
+    (if (eq (current-bidi-paragraph-direction) 'right-to-left)
+        (evil-forward-char count)
+      (evil-backward-char count)))
+  (evil-define-motion kz/evil-visual-right (count)
+    :type exclusive
+    (if (eq (current-bidi-paragraph-direction) 'right-to-left)
+        (evil-backward-char count)
+      (evil-forward-char count)))
+  (evil-global-set-key 'motion "h" 'kz/evil-visual-left)
+  (evil-global-set-key 'motion "l" 'kz/evil-visual-right)
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal))
 
@@ -297,6 +309,13 @@
   :after evil
   :init
   (evil-commentary-mode))
+
+(use-package reverse-im
+  :demand t
+  :custom
+  (reverse-im-input-methods '("farsi-isiri-9147"))
+  :config
+  (reverse-im-mode t))
 
 (use-package magit
   :defer t
