@@ -38,7 +38,11 @@
 (setq-default indent-tabs-mode nil)
 (setf dired-kill-when-opening-new-dired-buffer t)
 (set-frame-parameter nil 'alpha-background 90)
-(setq scroll-conservatively 1)
+(setq scroll-conservatively 101
+      scroll-margin 0
+      scroll-preserve-screen-position t
+      auto-window-vscroll nil)
+(pixel-scroll-precision-mode 1)
 (setq use-short-answers t)
 (setq confirm-nonexistent-file-or-buffer nil)
 (setq delete-by-moving-to-trash t)

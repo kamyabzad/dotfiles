@@ -57,8 +57,8 @@ case $chosen in
         fi
         ;;
     $lock)
-		if [[ -f /usr/bin/i3lock ]]; then
-            ~/.config/i3/i3lock.sh
+		if [[ -f /usr/bin/xsecurelock ]]; then
+            ~/.config/i3/lock.sh
 		elif [[ -f /usr/bin/betterlockscreen ]]; then
 			betterlockscreen -l
 		fi
